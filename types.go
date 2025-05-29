@@ -2,11 +2,9 @@ package main
 
 import (
 	"encoding/xml"
+	"os"
+	"strings"
 )
-
-type Jar struct {
-	URL string `xml:"href,attr"`
-}
 
 type Jnlp struct {
 	Codebase string   // JNLP's codebase
@@ -46,4 +44,40 @@ func (j *Jnlp) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		}
 	}
 	return nil
+}
+
+type Flags struct {
+	InputFile                string
+	DownloadDir              string
+	IgnoreFailedDownload     bool
+	IgnoreFailedFileCreation bool
+	IgnoreFailedFileWrite    bool
+}
+
+func (f *Flags) Parse() {
+	// Defaults
+	f.IgnoreFailedDownload = true
+	f.IgnoreFailedFileCreation = true
+	f.IgnoreFailedFileWrite = true
+
+	for _, arg := range os.Args[1:] {
+		if strings.HasPrefix(arg, "-") {
+			switch arg {
+			case FailedDownloadFlag:
+				f.IgnoreFailedDownload = false
+			case FailedFileCreationFlag:
+				f.IgnoreFailedFileCreation = false
+			case FailedFileWriteFlag:
+				f.IgnoreFailedFileWrite = false
+			}
+		} else if f.InputFile == "" {
+			f.InputFile = arg
+		} else if f.DownloadDir == "" {
+			f.DownloadDir = arg
+		}
+	}
+
+	if f.DownloadDir == "" {
+		f.DownloadDir = defaultDownloadDir
+	}
 }

@@ -11,13 +11,6 @@ import (
 	"strings"
 )
 
-const (
-	defaultDownloadDir     string = "downloads"
-	FailedDownloadFlag     string = "--failed-download-exit"
-	FailedFileCreationFlag string = "--failed-file-creation-exit"
-	FailedFileWriteFlag    string = "--failed-file-write-exit"
-)
-
 const usage string = "JNLP resource downloader\n\n" +
 
 	"This utility downloads every JAR files listed in the provided JNLP file.\n\n" +
@@ -25,8 +18,8 @@ const usage string = "JNLP resource downloader\n\n" +
 	"usage: jrdl [OPTIONS] <jnlp-file> [download-dir]\n\n" +
 
 	"ARGUMENTS:\n" +
-	"<jnlp-file>			Path to the JNLP file to download (required)\n" +
-	"[download-dir]		Directory to download the JAR files to (optional)\n\n" +
+	"<jnlp-file>				Path to the JNLP file to download (required)\n" +
+	"[download-dir]				Directory to download the JAR files to (optional)\n\n" +
 
 	"OPTIONS:\n" +
 	"--failed-download-exit			Exit with non-zero code if a download fails\n" +
@@ -34,13 +27,21 @@ const usage string = "JNLP resource downloader\n\n" +
 	"--failed-file-write-exit		Exit with non-zero code if a file cannot be written\n\n" +
 
 	"EXAMPLE:\n" +
-	"jrdl jnlp-file.jnlp JnlpOutDir\n\n" +
+	"$ jrdl jnlp-file.jnlp JnlpOutDir\n" +
+	"$ jrdl --failed-file-write-exit application.jnlp application/res\n" +
+	"$ jrdl resources.jnlp --failed-download-exit ../jars/files\n\n" +
 
 	"REMARKS:\n" +
 
 	"<jnlp-file> and [download-dir] are positional arguments and must be specified in this order regardless of their position among the possibly specified options.\n" +
-
 	"Any command line argument starting with a dash (-) is considered an option and will be ignored if not supported."
+
+const (
+	defaultDownloadDir     string = "downloads"
+	FailedDownloadFlag     string = "--failed-download-exit"
+	FailedFileCreationFlag string = "--failed-file-creation-exit"
+	FailedFileWriteFlag    string = "--failed-file-write-exit"
+)
 
 func resolveUrl(base, href string) string {
 	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(href, "/")
@@ -54,42 +55,6 @@ func downloadJar(jarUrl string) ([]byte, error) {
 	defer r.Body.Close()
 
 	return io.ReadAll(r.Body)
-}
-
-type Flags struct {
-	InputFile                string
-	DownloadDir              string
-	IgnoreFailedDownload     bool
-	IgnoreFailedFileCreation bool
-	IgnoreFailedFileWrite    bool
-}
-
-func (f *Flags) Parse() {
-	// Defaults
-	f.IgnoreFailedDownload = true
-	f.IgnoreFailedFileCreation = true
-	f.IgnoreFailedFileWrite = true
-
-	for _, arg := range os.Args[1:] {
-		if strings.HasPrefix(arg, "-") {
-			switch arg {
-			case FailedDownloadFlag:
-				f.IgnoreFailedDownload = false
-			case FailedFileCreationFlag:
-				f.IgnoreFailedFileCreation = false
-			case FailedFileWriteFlag:
-				f.IgnoreFailedFileWrite = false
-			}
-		} else if f.InputFile == "" {
-			f.InputFile = arg
-		} else if f.DownloadDir == "" {
-			f.DownloadDir = arg
-		}
-	}
-
-	if f.DownloadDir == "" {
-		f.DownloadDir = defaultDownloadDir
-	}
 }
 
 func main() {
